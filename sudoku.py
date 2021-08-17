@@ -52,6 +52,125 @@ class Sudoku:
                 result.append(f'{self.cells[i].value}  ')
         return ''.join(result)
 
+    class Column:
+        """
+        Класс, содержащий все клетки одного столбца, а также известные значения.
+        Реализует метод собственного копирования.
+        """
+
+        def __init__(self, x):
+            self.x = x
+            self.values = set()
+            self.cells = []
+
+        def copy(self, cells):
+            column = Sudoku.Column(self.x)
+            column.values = self.values.copy()
+            column.cells = [cells[key] for key in cells
+                            for cell_2 in self.cells
+                            if f'{cells[key].x}{cells[key].y}' == f'{cell_2.x}{cell_2.y}']
+            return column
+
+    class Line:
+        """
+        Класс, содержащий все клетки одной строки, а также известные значения.
+        Реализует метод собственного копирования.
+        """
+
+        def __init__(self, y):
+            self.y = y
+            self.values = set()
+            self.cells = []
+
+        def copy(self, cells):
+            line = Sudoku.Line(self.y)
+            line.values = self.values.copy()
+            line.cells = [cells[key] for key in cells
+                          for cell_2 in self.cells
+                          if f'{cells[key].x}{cells[key].y}' == f'{cell_2.x}{cell_2.y}']
+            return line
+
+    class SmallSquare:
+        """
+        Класс, содержащий все клетки одного малого квадрата, все координаты
+        его строк и столбцов, а также известные значения.
+        Реализует метод собственного копирования.
+        """
+
+        def __init__(self, number):
+            self.number = number
+            self.values = set()
+            self.cells = []
+            self.columns = self._definition_cl('columns')
+            self.lines = self._definition_cl('lines')
+
+        def copy(self, cells):
+            small_square = Sudoku.SmallSquare(self.number)
+            small_square.values = self.values.copy()
+            small_square.cells = [cells[key] for key in cells
+                                  for cell_2 in self.cells
+                                  if f'{cells[key].x}{cells[key].y}' == f'{cell_2.x}{cell_2.y}']
+            small_square.columns = self.columns.copy()
+            small_square.lines = self.lines.copy()
+            return small_square
+
+        def _definition_cl(self, param):
+            """ Вычесление координат срок и столбцов квадрата. """
+
+            result = {'columns': [], 'lines': []}
+            if self.number in [1, 4, 7]:
+                result['columns'].extend(['a', 'b', 'c'])
+            elif self.number in [2, 5, 8]:
+                result['columns'].extend(['d', 'e', 'f'])
+            elif self.number in [3, 6, 9]:
+                result['columns'].extend(['g', 'h', 'i'])
+
+            if self.number in [1, 2, 3]:
+                result['lines'].extend(['1', '2', '3'])
+            elif self.number in [4, 5, 6]:
+                result['lines'].extend(['4', '5', '6'])
+            elif self.number in [7, 8, 9]:
+                result['lines'].extend(['7', '8', '9'])
+
+            if param == 'columns':
+                return result['columns']
+            elif param == 'lines':
+                return result['lines']
+
+    class Cell:
+        """
+        Класс клетки, создержащий ее координаты, значение и возможные значения этой клетки.
+        Реализует метод копирования и метод вычисления возможных значений.
+        """
+
+        def __init__(self, x, y, value):
+            self.x = x
+            self.y = y
+            self.value = value
+            if self.value.isdigit() and self.value not in '123456789':
+                raise ValueError('значение клетки должно быть в диапазоне от 1 до 9')
+            self.value_options = set() if self.value.isdigit() else {str(i) for i in range(1, 10)}
+
+        def copy(self):
+            cell = Sudoku.Cell(self.x, self.y, self.value)
+            cell.value_options = self.value_options.copy()
+            return cell
+
+        def update_value_options(self, column, line, small_square, empty_cells):
+            """
+            Вычисляет возможные значения клетки. В случае, если возможное значение одно,
+            устанавливет его в значение этой клетки и производит обновление данных судоку.
+            """
+
+            self.value_options -= column.values
+            self.value_options -= line.values
+            self.value_options -= small_square.values
+            if not self.value_options and not self.value.isdigit():
+                raise ValueError
+            if not self.value.isdigit() and len(self.value_options) == 1:
+                self.value = self.value_options.pop()
+                Sudoku._update_data(self, column, line, small_square, empty_cells)
+
     @staticmethod
     def _validate_line(line):
         """ Проверка корректности введенных данных для строк. """
@@ -475,122 +594,6 @@ class Sudoku:
             if self.empty_cells:
                 raise ValueError('судоку не имеет решений')
 
-    class Column:
-        """
-        Класс, содержащий все клетки одного столбца, а также известные значения.
-        Реализует метод собственного копирования.
-        """
-
-        def __init__(self, x):
-            self.x = x
-            self.values = set()
-            self.cells = []
-
-        def copy(self, cells):
-            column = Sudoku.Column(self.x)
-            column.values = self.values.copy()
-            column.cells = [cells[key] for key in cells
-                            for cell_2 in self.cells
-                            if f'{cells[key].x}{cells[key].y}' == f'{cell_2.x}{cell_2.y}']
-            return column
-
-    class Line:
-        """
-        Класс, содержащий все клетки одной строки, а также известные значения.
-        Реализует метод собственного копирования.
-        """
-
-        def __init__(self, y):
-            self.y = y
-            self.values = set()
-            self.cells = []
-
-        def copy(self, cells):
-            line = Sudoku.Line(self.y)
-            line.values = self.values.copy()
-            line.cells = [cells[key] for key in cells
-                          for cell_2 in self.cells
-                          if f'{cells[key].x}{cells[key].y}' == f'{cell_2.x}{cell_2.y}']
-            return line
-
-    class SmallSquare:
-        """
-        Класс, содержащий все клетки одного малого квадрата, все координаты
-        его строк и столбцов, а также известные значения.
-        Реализует метод собственного копирования.
-        """
-
-        def __init__(self, number):
-            self.number = number
-            self.values = set()
-            self.cells = []
-            self.columns = self._definition_cl('columns')
-            self.lines = self._definition_cl('lines')
-
-        def copy(self, cells):
-            small_square = Sudoku.SmallSquare(self.number)
-            small_square.values = self.values.copy()
-            small_square.cells = [cells[key] for key in cells
-                                  for cell_2 in self.cells
-                                  if f'{cells[key].x}{cells[key].y}' == f'{cell_2.x}{cell_2.y}']
-            small_square.columns = self.columns.copy()
-            small_square.lines = self.lines.copy()
-            return small_square
-
-        def _definition_cl(self, param):
-            """ Вычесление координат срок и столбцов квадрата. """
-
-            result = {'columns': [], 'lines': []}
-            if self.number in [1, 4, 7]:
-                result['columns'].extend(['a', 'b', 'c'])
-            elif self.number in [2, 5, 8]:
-                result['columns'].extend(['d', 'e', 'f'])
-            elif self.number in [3, 6, 9]:
-                result['columns'].extend(['g', 'h', 'i'])
-
-            if self.number in [1, 2, 3]:
-                result['lines'].extend(['1', '2', '3'])
-            elif self.number in [4, 5, 6]:
-                result['lines'].extend(['4', '5', '6'])
-            elif self.number in [7, 8, 9]:
-                result['lines'].extend(['7', '8', '9'])
-
-            if param == 'columns':
-                return result['columns']
-            elif param == 'lines':
-                return result['lines']
-
-    class Cell:
-        """
-        Класс клетки, создержащий ее координаты, значение и возможные значения этой клетки.
-        Реализует метод копирования и метод вычисления возможных значений.
-        """
-
-        def __init__(self, x, y, value):
-            self.x = x
-            self.y = y
-            self.value = value
-            self.value_options = set() if self.value.isdigit() else {str(i) for i in range(1, 10)}
-
-        def copy(self):
-            cell = Sudoku.Cell(self.x, self.y, self.value)
-            cell.value_options = self.value_options.copy()
-            return cell
-
-        def update_value_options(self, column, line, small_square, empty_cells):
-            """
-            Вычисляет возможные значения клетки. В случае, если возможное значение одно,
-            устанавливет его в значение этой клетки и производит обновление данных судоку.
-            """
-
-            self.value_options -= column.values
-            self.value_options -= line.values
-            self.value_options -= small_square.values
-            if not self.value_options and not self.value.isdigit():
-                raise ValueError
-            if not self.value.isdigit() and len(self.value_options) == 1:
-                self.value = self.value_options.pop()
-                Sudoku._update_data(self, column, line, small_square, empty_cells)
 
 
 if __name__ == '__main__':
