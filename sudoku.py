@@ -262,9 +262,7 @@ class Sudoku:
         (строках или столбцах малого квадрата), но нет в третьей.
         """
 
-        set1 = set()
-        set2 = set()
-        set3 = set()
+        set1, set2, set3 = set(), set(), set()
         for cell in square.cells:
             if group1 in [cell.x, cell.y] and cell.value_options:
                 set1 |= cell.value_options
@@ -585,15 +583,12 @@ class Sudoku:
                         result = 'continue'
                         continue
         if self.empty_cells:
-            backup_key = list(backup_dict.keys())[::-1]
-            backup_dict_rev = {key: backup_dict[key] for key in backup_key}
-            for key in backup_dict_rev:
+            for key in list(backup_dict.keys())[::-1]:
                 main_result = self.calculate_result(self.cells[key], backup_dict)
                 if main_result == 'end':
                     return 'end'
             if self.empty_cells:
                 raise ValueError('судоку не имеет решений')
-
 
 
 if __name__ == '__main__':
