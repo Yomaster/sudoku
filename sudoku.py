@@ -147,8 +147,6 @@ class Sudoku:
             self.x = x
             self.y = y
             self.value = value
-            if self.value.isdigit() and self.value not in '123456789':
-                raise ValueError('значение клетки должно быть в диапазоне от 1 до 9')
             self.value_options = set() if self.value.isdigit() else {str(i) for i in range(1, 10)}
 
         def copy(self):
@@ -177,6 +175,9 @@ class Sudoku:
 
         if len(line) != 9:
             raise ValueError('в строке должно быть 9 значений')
+        for i in line:
+            if i.isdigit() and i not in '123456789':
+                raise ValueError('значение клетки должно быть в диапазоне от 1 до 9')
         return line
 
     @staticmethod
