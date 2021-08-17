@@ -52,6 +52,38 @@ class Sudoku:
                 result.append(f'{self.cells[i].value}  ')
         return ''.join(result)
 
+    class Cell:
+        """
+        Класс клетки, создержащий ее координаты, значение и возможные значения этой клетки.
+        Реализует метод копирования и метод вычисления возможных значений.
+        """
+
+        def __init__(self, x, y, value):
+            self.x = x
+            self.y = y
+            self.value = value
+            self.value_options = set() if self.value.isdigit() else {str(i) for i in range(1, 10)}
+
+        def copy(self):
+            cell = Sudoku.Cell(self.x, self.y, self.value)
+            cell.value_options = self.value_options.copy()
+            return cell
+
+        def update_value_options(self, column, line, small_square, empty_cells):
+            """
+            Вычисляет возможные значения клетки. В случае, если возможное значение одно,
+            устанавливет его в значение этой клетки и производит обновление данных судоку.
+            """
+
+            self.value_options -= column.values
+            self.value_options -= line.values
+            self.value_options -= small_square.values
+            if not self.value_options and not self.value.isdigit():
+                raise ValueError
+            if not self.value.isdigit() and len(self.value_options) == 1:
+                self.value = self.value_options.pop()
+                Sudoku._update_data(self, column, line, small_square, empty_cells)
+
     class Column:
         """
         Класс, содержащий все клетки одного столбца, а также известные значения.
@@ -136,38 +168,6 @@ class Sudoku:
                 return result['columns']
             elif param == 'lines':
                 return result['lines']
-
-    class Cell:
-        """
-        Класс клетки, создержащий ее координаты, значение и возможные значения этой клетки.
-        Реализует метод копирования и метод вычисления возможных значений.
-        """
-
-        def __init__(self, x, y, value):
-            self.x = x
-            self.y = y
-            self.value = value
-            self.value_options = set() if self.value.isdigit() else {str(i) for i in range(1, 10)}
-
-        def copy(self):
-            cell = Sudoku.Cell(self.x, self.y, self.value)
-            cell.value_options = self.value_options.copy()
-            return cell
-
-        def update_value_options(self, column, line, small_square, empty_cells):
-            """
-            Вычисляет возможные значения клетки. В случае, если возможное значение одно,
-            устанавливет его в значение этой клетки и производит обновление данных судоку.
-            """
-
-            self.value_options -= column.values
-            self.value_options -= line.values
-            self.value_options -= small_square.values
-            if not self.value_options and not self.value.isdigit():
-                raise ValueError
-            if not self.value.isdigit() and len(self.value_options) == 1:
-                self.value = self.value_options.pop()
-                Sudoku._update_data(self, column, line, small_square, empty_cells)
 
     @staticmethod
     def _validate_line(line):
